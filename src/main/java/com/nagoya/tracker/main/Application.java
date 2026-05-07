@@ -1,11 +1,14 @@
 package com.nagoya.tracker.main;
 
 import com.nagoya.tracker.domain.Product;
+import com.nagoya.tracker.service.ProductService;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 public class Application {
     public static void main(String[] args) {
@@ -27,23 +30,13 @@ public class Application {
             System.out.println(e.getMessage());
         }
 
-        // 4. Create productMap
-        Map<String, Product> productMap = new HashMap<>();
-
-        // 5. put productMap
-        for (Product p : productList) {
-            String compositeKey = p.getStoreName() + "_" + p.getItemName();
-            productMap.put(compositeKey, p);
-        }
-
-        // 6. Search for Optional
-        Optional<Product> resultOpt = Optional.ofNullable(productMap.get("Amica_banana"));
-
-        // 7. Print
-        resultOpt.ifPresentOrElse(
-                p -> System.out.println("store: " + p.getStoreName() + ", price: " + p.getPrice()),
-                () -> System.out.println("Data is nothing")
+        // 4. ProductService
+        ProductService productService = new ProductService();
+        Optional<Product> lowestPriceProduct = productService.getLowestPriceProduct(productList);
+        System.out.println(
+                "storeName: " + lowestPriceProduct.get().getStoreName() +
+                        ", itemName: " + lowestPriceProduct.get().getItemName() +
+                        ", price: " + lowestPriceProduct.get().getPrice()
         );
-
     }
 }

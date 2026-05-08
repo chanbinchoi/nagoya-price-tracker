@@ -4,38 +4,48 @@ import com.nagoya.tracker.domain.Product;
 import com.nagoya.tracker.service.LowestPriceAnalyzer;
 import com.nagoya.tracker.service.PriceAnalyzer;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public class Application {
-    public static void main(String[] args) {
-        // 1. Create productList
+    public static void main(String[] args) throws SQLException {
+        String url = "jdbc:h2:mem:nagoyadb;DB_CLOSE_DELAY=-1";
+        String user = "sa";
+        String password = "";
+
         List<Product> productList = new ArrayList<>();
 
-        // 2. Read File
-        try (BufferedReader br = new BufferedReader(new FileReader("prices.csv"))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                String[] values = line.split(",");
-                
-                // 3. add List
-                if (values.length == 3) {
-                    productList.add(new Product(values[0], values[1], Integer.parseInt(values[2])));
-                }
+        // 1. Connect DB
+        try (Connection conn = DriverManager.getConnection(url, user, password);
+             Statement stmt = conn.createStatement()) {
+
+            // 2. Create Table
+            stmt.execute("CREATE TABLE PRODUCT (store_name VARCHAR(255), item_name VARCHAR(255), price INT)");
+
+            // 3. Insert Data
+            stmt.execute("INSERT INTO PRODUCT VALUES ('V-drug', 'apple', 200)");
+
+            // 4. Select Data
+            ResultSet rs = stmt.executeQuery("SELECT * FROM PRODUCT");
+
+            // 5. Passing ResultSet, Add List
+            while (rs.next()) {
+                String storeName = rs.getString("store_name");
+                String itemName = rs.getString("item_name");
+                int price = rs.getInt("price");
+
+                productList.add(new Product(storeName, itemName, price));
             }
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
+        } catch (SQLException e) {
+            System.out.println("Datebase Connect Or Query Error: " + e.getMessage());
         }
 
-        // 4. ProductService
+        // 6. Service Logic, Print
         PriceAnalyzer analyzer = new LowestPriceAnalyzer();
         Optional<Product> lowestPriceProduct = analyzer.analyze(productList);
 
-        // 5. Print
         lowestPriceProduct.ifPresentOrElse(
                 p -> System.out.printf("最安値の商品情報を確認いたしました。店舗名: %s, 価格: %d円%n",
                         p.getStoreName(), p.getPrice()),
